@@ -23,7 +23,7 @@ describe('Status Controller', () => {
   it('should return ok status', async () => {
     const status = await controller.status();
     expect(status).toEqual({
-      status: 'ok',
+      status: 'pass',
       version: 'test',
       environment: 'testing',
     });

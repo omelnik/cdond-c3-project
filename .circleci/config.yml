@@ -16,7 +16,6 @@ commands:
           template: basic_fail_1
 
 jobs:
-
   notify_slack_pass:
     executor: docker-node-executor
     steps:
