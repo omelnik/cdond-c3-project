@@ -8,13 +8,14 @@ executors:
 orbs:
   slack: circleci/slack@4.3.0
 
-jobs:
+commands:
   notify_slack_error:
-    executor: docker-node-executor
     steps:
       - slack/notify:
           event: fail
           template: basic_fail_1
+
+jobs:
 
   notify_slack_pass:
     executor: docker-node-executor
@@ -38,6 +39,7 @@ jobs:
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
+
       - notify_slack_error
 
   build-backend:
