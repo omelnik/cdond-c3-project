@@ -1,23 +1,30 @@
 version: 2.1
 
+executors:
+  docker-node-executor:
+    docker:
+      - image: circleci/node:13.8.0
+
 orbs:
   slack: circleci/slack@4.3.0
 
-commands:
-
+jobs:
   notify_slack_error:
+    executor: docker-node-executor
     steps:
       - slack/notify:
           event: fail
           template: basic_fail_1
 
   notify_slack_pass:
+    executor: docker-node-executor
     steps:
       - slack/notify:
           event: pass
           template: basic_success_1
 
   build-frontend:
+    executor: docker-node-executor
     steps:
       - checkout
       - restore_cache:
@@ -33,6 +40,7 @@ commands:
           key: frontend-build
 
   build-backend:
+    executor: docker-node-executor
     steps:
       - checkout
       - restore_cache:
@@ -46,8 +54,9 @@ commands:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
-
+  
   test-frontend:
+    executor: docker-node-executor
     steps:
       - checkout
       - restore_cache:
@@ -58,8 +67,9 @@ commands:
             cd frontend
             npm install
             npm run test
-    
+
   test-backend:
+    executor: docker-node-executor
     steps:
       - checkout
       - restore_cache:
@@ -70,8 +80,9 @@ commands:
             cd backend
             npm install
             npm run test
-
+        
   scan-backend:
+    executor: docker-node-executor
     steps:
       - checkout
       - restore_cache:
@@ -85,6 +96,7 @@ commands:
             npm audit --audit-level=critical
 
   scan-frontend:
+    executor: docker-node-executor
     steps:
       - checkout
       - restore_cache:
@@ -96,11 +108,9 @@ commands:
             npm install
             npm audit --audit-level=critical
 
-jobs:
-  pull-request-local-to-remote:
-    docker:
-      - image: circleci/node:13.8.0
-    steps:
+workflows:
+  default:
+    jobs:
       - build-frontend
       - build-backend
       - test-frontend:
@@ -111,10 +121,9 @@ jobs:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
-      - notify_slack_error
-      - notify_slack_pass
-
-workflows:
-  default:
-    jobs:
-      - pull-request-local-to-remote
+      - notify_slack_error:
+          requires:
+            - test-frontend
+            - test-backend
+            - scan-frontend
+            - scan-backend
