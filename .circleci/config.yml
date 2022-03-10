@@ -38,6 +38,7 @@ jobs:
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
+      - notify_slack_error
 
   build-backend:
     executor: docker-node-executor
@@ -54,6 +55,7 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+      - notify_slack_error
   
   test-frontend:
     executor: docker-node-executor
@@ -67,6 +69,7 @@ jobs:
             cd frontend
             npm install
             npm run test
+      - notify_slack_error
 
   test-backend:
     executor: docker-node-executor
@@ -80,6 +83,7 @@ jobs:
             cd backend
             npm install
             npm run test
+      - notify_slack_error
         
   scan-backend:
     executor: docker-node-executor
@@ -94,6 +98,7 @@ jobs:
             npm install
             npm audit fix --audit-level=critical
             npm audit --audit-level=critical
+      - notify_slack_error
 
   scan-frontend:
     executor: docker-node-executor
@@ -107,6 +112,7 @@ jobs:
             cd frontend
             npm install
             npm audit --audit-level=critical
+      - notify_slack_error
 
 workflows:
   default:
@@ -121,7 +127,7 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
-      - notify_slack_error:
+      - notify_slack_pass:
           requires:
             - test-frontend
             - test-backend
