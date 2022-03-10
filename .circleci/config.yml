@@ -21,85 +21,84 @@ commands:
           event: pass
           template: basic_success_1
 
-    build-frontend:
-      steps:
-        - checkout
-        - restore_cache:
-            keys: [frontend-build]
-        - run:
-            name: Build front-end
-            command: |
-              cd frontend
-              npm install
-              npm run build
-        - save_cache:
-            paths: [frontend/node_modules]
-            key: frontend-build
+  build-frontend:
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Build front-end
+          command: |
+            cd frontend
+            npm install
+            npm run build
+      - save_cache:
+          paths: [frontend/node_modules]
+          key: frontend-build
 
-    build-backend:
-      steps:
-        - checkout
-        - restore_cache:
-            keys: [backend-build]
-        - run:
-            name: Build backend-end
-            command: |
-              cd backend
-              npm install
-              npm run build
-        - save_cache:
-            paths: [backend/node_modules]
-            key: backend-build
+  build-backend:
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Build backend-end
+          command: |
+            cd backend
+            npm install
+            npm run build
+      - save_cache:
+          paths: [backend/node_modules]
+          key: backend-build
 
-      
-    test-frontend:
-      steps:
-        - checkout
-        - restore_cache:
-            keys: [frontend-build]
-        - run:
-            name: Run frontend test
-            command: |
-              cd frontend
-              npm install
-              npm run test
+  test-frontend:
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Run frontend test
+          command: |
+            cd frontend
+            npm install
+            npm run test
     
-    test-backend:
-      steps:
-        - checkout
-        - restore_cache:
-            keys: [backend-build]
-        - run:
-            name: Run backend test
-            command: |
-              cd backend
-              npm install
-              npm run test
+  test-backend:
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Run backend test
+          command: |
+            cd backend
+            npm install
+            npm run test
 
-    scan-backend:
-      steps:
-        - checkout
-        - restore_cache:
-            keys: [backend-build]
-        - run:
-            name: Scan backend dependencies
-            command: |
-              cd backend
-              npm install
-              npm audit fix --audit-level=critical
-              npm audit --audit-level=critical
+  scan-backend:
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Scan backend dependencies
+          command: |
+            cd backend
+            npm install
+            npm audit fix --audit-level=critical
+            npm audit --audit-level=critical
 
-    scan-frontend:
-      steps:
-        - checkout
-        - restore_cache:
-            keys: [frontend-build]
-        - run:
-            name: Scan frontend dependencies
-            command: |
-              cd frontend
-              npm install
-              npm audit --audit-level=critical
+  scan-frontend:
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Scan frontend dependencies
+          command: |
+            cd frontend
+            npm install
+            npm audit --audit-level=critical
 
 jobs:
   pull-request-local-to-remote:
