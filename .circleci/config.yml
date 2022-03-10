@@ -1,14 +1,10 @@
 version: 2.1
 
-executors:
-  docker-node-executor:
-    docker:
-      - image: circleci/node:13.8.0
-
 orbs:
   slack: circleci/slack@4.3.0
 
 commands:
+
   notify_slack_error:
     steps:
       - slack/notify:
@@ -102,7 +98,8 @@ commands:
 
 jobs:
   pull-request-local-to-remote:
-    executor: docker-node-executor
+    docker:
+      - image: circleci/node:13.8.0
     steps:
       - build-frontend
       - build-backend
@@ -116,8 +113,6 @@ jobs:
           requires: [build-backend]
       - notify_slack_error
       - notify_slack_pass
-
-
 
 workflows:
   default:
