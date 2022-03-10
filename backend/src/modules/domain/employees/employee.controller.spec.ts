@@ -251,7 +251,7 @@ describe('Employee Controller', () => {
       await employeeController.activateEmployee(employee.employeeId, employee.isActive);
 
       // Assert
-      expect(fakeCommandDispatcher.execute).toBeCalledTimes(14);
+      expect(fakeCommandDispatcher.execute).toBeCalledTimes(10);
     });
   });
 });
