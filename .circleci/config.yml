@@ -5,7 +5,24 @@ executors:
     docker:
       - image: circleci/node:13.8.0
 
+orbs:
+  slack: circleci/slack@4.3.0
+
 jobs:
+  notify_slack_error:
+    executor: docker-node-executor
+    steps:
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
+
+  notify_slack_pass:
+    executor: docker-node-executor
+    steps:
+      - slack/notify:
+          event: pass
+          template: basic_success_1
+
   build-frontend:
     executor: docker-node-executor
     steps:
@@ -104,3 +121,9 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
+      - notify_slack_error:
+          requires:
+            - test-frontend
+            - test-backend
+            - scan-frontend
+            - scan-backend
