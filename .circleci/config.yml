@@ -24,7 +24,6 @@ commands:
 jobs:
   build-frontend:
     executor: docker-node-executor
-    context: UdaPeople Context
     steps:
       - checkout
       - restore_cache:
