@@ -194,7 +194,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apt-get update && apt-get install -y \
+            apt-get update && sudo apt-get install -y \
                               ansible \ 
                               tar \
                               gzip \
