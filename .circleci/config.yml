@@ -136,6 +136,9 @@ jobs:
     executor: aws-cli
     steps:
       - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "f1:0a:3c:b1:e9:47:bb:6c:e1:96:ca:6e:63:60:d0:91"
       - run:
           name: Ensure back-end infrastructure exists
           command: |
@@ -144,7 +147,7 @@ jobs:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
               --tags project=udapeople
-              
+
       - run:
           name: Ensure front-end infrastructure exist
           command: |
