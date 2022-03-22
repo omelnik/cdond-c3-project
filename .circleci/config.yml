@@ -1,20 +1,36 @@
 version: 2.1
 
+
 executors:
   docker-node-executor:
     docker:
       - image: circleci/node:13.8.0
+  aws-cli:
+    docker:
+      - image: amazon/aws-cli
+
+commands:
+  destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
+
+  notify_slack_error:
+    description: Slack Notification
+    steps:
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
 
 orbs:
   slack: circleci/slack@4.3.0
 
 jobs:
-  notify_slack_error:
-    executor: docker-node-executor
-    steps:
-      - slack/notify:
-          event: fail
-          template: basic_fail_1
 
   notify_slack_pass:
     executor: docker-node-executor
@@ -39,6 +55,8 @@ jobs:
           paths: [frontend/node_modules]
           key: frontend-build
 
+      - notify_slack_error
+
   build-backend:
     executor: docker-node-executor
     steps:
@@ -54,6 +72,7 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+      - notify_slack_error
   
   test-frontend:
     executor: docker-node-executor
@@ -67,6 +86,7 @@ jobs:
             cd frontend
             npm install
             npm run test
+      - notify_slack_error
 
   test-backend:
     executor: docker-node-executor
@@ -80,6 +100,7 @@ jobs:
             cd backend
             npm install
             npm run test
+      - notify_slack_error
         
   scan-backend:
     executor: docker-node-executor
@@ -94,6 +115,7 @@ jobs:
             npm install
             npm audit fix --audit-level=critical
             npm audit --audit-level=critical
+      - notify_slack_error
 
   scan-frontend:
     executor: docker-node-executor
@@ -107,6 +129,44 @@ jobs:
             cd frontend
             npm install
             npm audit --audit-level=critical
+      - notify_slack_error
+
+  deploy-infrastructure:
+    executor: aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Ensure back-end infrastructure exists
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
+              --tags project=udapeople
+      - run:
+          name: Ensure front-end infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
+              --tags project=udapeople
+      
+      - run:
+          name: Add back-end ip to ansible inventory
+          command: |
+            echo "[web]" > inventory.txt
+            aws ec2 describe-instances \
+             --query 'Reservations[*].Instances[*].PublicIpAddress' \
+             --output text >> inventory.txt
+
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/ansible/inventory.txt
+
+      - destroy-environment
+      - notify_slack_error
 
 workflows:
   default:
@@ -121,9 +181,8 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
-      - notify_slack_error:
-          requires:
-            - test-frontend
-            - test-backend
-            - scan-frontend
-            - scan-backend
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [test-feature-branch]
