@@ -163,7 +163,7 @@ jobs:
              --output text >> inventory.txt
 
       - persist_to_workspace:
-          root: ~/
+          root: .
           paths: 
             - inventory.txt
             
@@ -186,9 +186,14 @@ jobs:
   configure-infra:
     executor: python-docker-executor
     steps:
-      - attach_workspace:
-          at: ~/
       - checkout
+      - attach_workspace:
+          at: ./.circleci/ansible
+
+      - run:
+          name: Print files
+          command: ls -l
+
       - add_ssh_keys:
           fingerprints: ["f1:0a:3c:b1:e9:47:bb:6c:e1:96:ca:6e:63:60:d0:91"]
       - run:
@@ -200,7 +205,7 @@ jobs:
       - run:
           name: Configure server
           command: |
-            mv inventory.txt .circleci/ansible && cd .circleci/ansible
+            cd .circleci/ansible
             ansible-playbook -i inventory.txt configure-server.yml
 
 workflows:
