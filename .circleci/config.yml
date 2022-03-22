@@ -139,7 +139,7 @@ jobs:
             npm audit --audit-level=critical
       - notify_slack_error
 
-  deploy-backend-infrastructure:
+  deploy-backend-infra:
     executor: aws-cli
     steps:
       - checkout
@@ -169,7 +169,7 @@ jobs:
             - project/.circleci/ansible/inventory.txt
       - destroy-environment
 
-  deploy-frontend-infrastructure:
+  deploy-frontend-infra:
     executor: aws-cli
     steps:
       - checkout
@@ -183,7 +183,7 @@ jobs:
               --tags project=udapeople
       - destroy-environment
 
-  configure-infrastructure:
+  configure-infra:
     executor: python-docker-executor
     steps:
       - checkout
@@ -223,3 +223,5 @@ workflows:
           requires: [test-frontend, scan-frontend]
       - deploy-backend-infra:
           requires: [test-backend,  scan-backend]
+      - configure-infra:
+          requires: [deploy-backend-infra, deploy-frontend-infra]
