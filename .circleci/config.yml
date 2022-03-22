@@ -33,8 +33,6 @@ commands:
             event: fail
             template: basic_fail_1
 
-
-
 jobs:
   notify_slack_pass:
     executor: docker-node-executor
@@ -194,11 +192,11 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apt-get update && sudo apt-get install -y \
-                              ansible \ 
-                              tar \
-                              gzip \
-                              awscli
+              yum -y \
+                ansible \ 
+                tar \
+                gzip \
+                awscli
 
       - run:
           name: Configure server
