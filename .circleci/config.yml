@@ -11,9 +11,9 @@ executors:
   aws-cli:
     docker:
       - image: amazon/aws-cli
-  ansible-docker-executor:
+  python-docker-executor:
     docker:
-      - image: ansible/ansible
+      - image: cimg/python:3.10.2
 
 commands:
   destroy-environment:
@@ -184,14 +184,27 @@ jobs:
       - destroy-environment
 
   configure-infrastructure:
-    executor: ansible-docker-executor
+    executor: python-docker-executor
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - "f1:0a:3c:b1:e9:47:bb:6c:e1:96:ca:6e:63:60:d0:91"
       - attach_workspace:
-          at: ./     
+          at: ./ 
+      - add_ssh_keys:
+          fingerprints: ["f1:0a:3c:b1:e9:47:bb:6c:e1:96:ca:6e:63:60:d0:91"]
+      - run:
+          name: Install dependencies
+          command: |
+            apt-get update && apt-get install -y \
+                              ansible \ 
+                              tar \
+                              gzip \
+                              awscli
+
+      - run:
+          name: Configure server
+          command: |
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt configure-server.yml
 
 workflows:
   default:
@@ -206,7 +219,7 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
-      - deploy-frontend-infrastructure:
+      - deploy-frontend-infra:
           requires: [test-frontend, scan-frontend]
-      - deploy-backend-infrastructure:
+      - deploy-backend-infra:
           requires: [test-backend,  scan-backend]
