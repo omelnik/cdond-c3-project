@@ -139,11 +139,10 @@ jobs:
             npm audit --audit-level=critical
       - notify_slack_error
 
-  deploy-infrastructure:
+  deploy-backend-infrastructure:
     executor: aws-cli
     steps:
       - checkout
-
       - run:
           name: Install yum dependencies
           command: |
@@ -157,7 +156,23 @@ jobs:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
               --tags project=udapeople
+      - run:
+          name: Add back-end ip to ansible inventory
+          command: |
+            echo "[web]" > inventory.txt
+            aws ec2 describe-instances \
+             --query 'Reservations[*].Instances[*].PublicIpAddress' \
+             --output text >> inventory.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/ansible/inventory.txt
+      - destroy-environment
 
+  deploy-frontend-infrastructure:
+    executor: aws-cli
+    steps:
+      - checkout
       - run:
           name: Ensure front-end infrastructure exist
           command: |
@@ -166,20 +181,6 @@ jobs:
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
               --tags project=udapeople
-      
-      - run:
-          name: Add back-end ip to ansible inventory
-          command: |
-            echo "[web]" > inventory.txt
-            aws ec2 describe-instances \
-             --query 'Reservations[*].Instances[*].PublicIpAddress' \
-             --output text >> inventory.txt
-
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/.circleci/ansible/inventory.txt
-
       - destroy-environment
 
   configure-infrastructure:
@@ -205,7 +206,7 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
-      - deploy-infrastructure:
-          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
+      - deploy-frontend-infrastructure:
+          requires: [test-frontend, scan-frontend]
+      - deploy-backend-infrastructure:
+          requires: [test-backend,  scan-backend]
