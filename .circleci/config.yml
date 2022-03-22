@@ -1,5 +1,12 @@
 version: 2.1
 
+references:
+  workspace_root: &workspace_root
+    /tmp/workspace
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: *workspace_root
+
 orbs:
   slack: circleci/slack@4.3.0
 
@@ -163,7 +170,7 @@ jobs:
              --output text >> inventory.txt
 
       - persist_to_workspace:
-          root: ~/
+          root: *workspace_root
           paths: 
             - inventory.txt
             
@@ -186,9 +193,8 @@ jobs:
   configure-infra:
     executor: python-docker-executor
     steps:
+      - *attach_workspace
       - checkout
-      - attach_workspace:
-          at: ./ 
       - add_ssh_keys:
           fingerprints: ["f1:0a:3c:b1:e9:47:bb:6c:e1:96:ca:6e:63:60:d0:91"]
       - run:
