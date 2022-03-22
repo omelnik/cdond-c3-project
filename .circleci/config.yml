@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  slack: circleci/slack@4.3.0
+
 
 executors:
   docker-node-executor:
@@ -23,15 +26,13 @@ commands:
   notify_slack_error:
     description: Slack Notification
     steps:
-      - slack/notify:
-          event: fail
-          template: basic_fail_1
+        - slack/notify:
+            event: fail
+            template: basic_fail_1
 
-orbs:
-  slack: circleci/slack@4.3.0
+
 
 jobs:
-
   notify_slack_pass:
     executor: docker-node-executor
     steps:
@@ -143,6 +144,8 @@ jobs:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
               --tags project=udapeople
+              
+            aws cloudformation describe-stack-events --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
           name: Ensure front-end infrastructure exist
           command: |
