@@ -9,14 +9,13 @@
   apt:
     upgrade: true
 
-- name: "install dependecies"
+- name: "install node & npm."
   become: true
-  apt:
-    name: ["nodejs", "npm"]
-    state: latest
-    update_cache: yes
+  ansible.builtin.shell: |
+    curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+    apt-get install -y nodejs
 
-- name: "indstall pm2"
+- name: "install pm2"
   become: true
   npm:
     name: pm2
