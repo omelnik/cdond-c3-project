@@ -3,7 +3,6 @@ version: 2.1
 orbs:
   slack: circleci/slack@4.3.0
 
-
 executors:
   docker-node-executor:
     docker:
@@ -157,7 +156,7 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            echo "[web]" >  ~/inventory.txt
+            echo "[web]" > inventory.txt
             aws ec2 describe-instances \
              --query 'Reservations[*].Instances[*].PublicIpAddress' \
              --output text >> inventory.txt
@@ -166,7 +165,7 @@ jobs:
           root: .
           paths: 
             - inventory.txt
-            
+
       - destroy-environment
 
   deploy-frontend-infra:
@@ -187,15 +186,13 @@ jobs:
     executor: python-docker-executor
     steps:
       - checkout
+
       - attach_workspace:
           at: ./.circleci/ansible
 
-      - run:
-          name: Print files
-          command: ls -l
-
       - add_ssh_keys:
-          fingerprints: ["f1:0a:3c:b1:e9:47:bb:6c:e1:96:ca:6e:63:60:d0:91"]
+          fingerprints: ["e8:32:3d:fb:58:36:6d:9d:56:ce:06:ad:4f:99:cc:7a"]
+
       - run:
           name: Install dependencies
           command: |
