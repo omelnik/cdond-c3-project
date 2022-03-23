@@ -1,21 +1,38 @@
 version: 2.1
 
+orbs:
+  slack: circleci/slack@4.3.0
+
 executors:
   docker-node-executor:
     docker:
       - image: circleci/node:13.8.0
+  aws-cli:
+    docker:
+      - image: amazon/aws-cli
+  python-docker-executor:
+    docker:
+      - image: cimg/python:3.10.2
 
-orbs:
-  slack: circleci/slack@4.3.0
+commands:
+  destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
+
+  notify_slack_error:
+    description: Slack Notification
+    steps:
+        - slack/notify:
+            event: fail
+            template: basic_fail_1
 
 jobs:
-  notify_slack_error:
-    executor: docker-node-executor
-    steps:
-      - slack/notify:
-          event: fail
-          template: basic_fail_1
-
   notify_slack_pass:
     executor: docker-node-executor
     steps:
@@ -33,11 +50,13 @@ jobs:
           name: Build front-end
           command: |
             cd frontend
-            npm install
+            npm ci
             npm run build
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
+
+      - notify_slack_error
 
   build-backend:
     executor: docker-node-executor
@@ -49,14 +68,16 @@ jobs:
           name: Build backend-end
           command: |
             cd backend
-            npm install
+            npm ci
             npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+      - notify_slack_error
   
   test-frontend:
     executor: docker-node-executor
+    parallelism: 2 # how many CircleCI machines to use
     steps:
       - checkout
       - restore_cache:
@@ -65,11 +86,14 @@ jobs:
           name: Run frontend test
           command: |
             cd frontend
-            npm install
-            npm run test
+            npm ci
+            TESTFILES=$(circleci tests glob "src/**/**.spec.*" | circleci tests split --split-by=timings)
+            npm run test $TESTFILES
+      - notify_slack_error
 
   test-backend:
     executor: docker-node-executor
+    parallelism: 2 # how many CircleCI machines to use
     steps:
       - checkout
       - restore_cache:
@@ -78,8 +102,10 @@ jobs:
           name: Run backend test
           command: |
             cd backend
-            npm install
-            npm run test
+            npm ci
+            TESTFILES=$(circleci tests glob "src/**/**.spec.ts" | circleci tests split --split-by=timings)
+            npm test $TESTFILES
+      - notify_slack_error
         
   scan-backend:
     executor: docker-node-executor
@@ -91,9 +117,10 @@ jobs:
           name: Scan backend dependencies
           command: |
             cd backend
-            npm install
+            npm ci
             npm audit fix --audit-level=critical
             npm audit --audit-level=critical
+      - notify_slack_error
 
   scan-frontend:
     executor: docker-node-executor
@@ -105,8 +132,78 @@ jobs:
           name: Scan frontend dependencies
           command: |
             cd frontend
-            npm install
+            npm ci
             npm audit --audit-level=critical
+      - notify_slack_error
+
+  deploy-backend-infra:
+    executor: aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install yum dependencies
+          command: |
+            yum -y install tar gzip
+
+      - run:
+          name: Ensure back-end infrastructure exists
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
+              --tags project=udapeople
+      - run:
+          name: Add back-end ip to ansible inventory
+          command: |
+            echo "[web]" > inventory.txt
+            aws ec2 describe-instances \
+             --query 'Reservations[*].Instances[*].PublicIpAddress' \
+             --output text >> inventory.txt
+
+      - persist_to_workspace:
+          root: .
+          paths: 
+            - inventory.txt
+
+      - destroy-environment
+
+  deploy-frontend-infra:
+    executor: aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Ensure front-end infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
+              --tags project=udapeople
+      - destroy-environment
+
+  configure-infra:
+    executor: python-docker-executor
+    steps:
+      - checkout
+
+      - attach_workspace:
+          at: ./.circleci/ansible
+
+      - add_ssh_keys:
+          fingerprints: ["e8:32:3d:fb:58:36:6d:9d:56:ce:06:ad:4f:99:cc:7a"]
+
+      - run:
+          name: Install dependencies
+          command: |
+              sudo apt-get update && sudo apt-get install -y tar gzip
+              pip install ansible
+
+      - run:
+          name: Configure server
+          command: |
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt configure-server.yml
 
 workflows:
   default:
@@ -121,9 +218,9 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
-      - notify_slack_error:
-          requires:
-            - test-frontend
-            - test-backend
-            - scan-frontend
-            - scan-backend
+      - deploy-frontend-infra:
+          requires: [test-frontend, scan-frontend]
+      - deploy-backend-infra:
+          requires: [test-backend,  scan-backend]
+      - configure-infra:
+          requires: [deploy-backend-infra, deploy-frontend-infra]
