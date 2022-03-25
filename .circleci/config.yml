@@ -10,7 +10,7 @@ executors:
   aws-cli:
     docker:
       - image: amazon/aws-cli
-  python-docker-executor:
+  docker-python-executor:
     docker:
       - image: cimg/python:3.10.2
 
@@ -183,7 +183,7 @@ jobs:
       - destroy-environment
 
   configure-infra:
-    executor: python-docker-executor
+    executor: docker-python-executor
     steps:
       - checkout
 
@@ -205,6 +205,58 @@ jobs:
             cd .circleci/ansible
             ansible-playbook -i inventory.txt configure-server.yml
 
+  run-migrations:
+    executor: docker-node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            npm ci
+            npm run migrations > migrations_dump.txt
+            
+      - run:
+          name: Send migration status to kvdb.io OR memstash.io
+          command: |   
+              if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
+              then
+                  curl https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+              fi
+
+  deploy-frontend:
+    executor: aws-cli
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Install dependencies
+          command: |
+              yum -y install tar gzip
+      - run:
+          name: Get backend url
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances \
+                    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+                    --filters "Name = tag:Name, Values = ${CIRCLE_WORKFLOW_ID:0:7}")
+            export API_URL="http://${BACKEND_IP}:3030"
+
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
+      - run:
+          name: Deploy frontend objects
+          command: |
+            cd fronted
+            npm ci
+            npm run build
+            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+      - destroy-environment
+
 workflows:
   default:
     jobs:
@@ -224,3 +276,7 @@ workflows:
           requires: [test-backend,  scan-backend]
       - configure-infra:
           requires: [deploy-backend-infra, deploy-frontend-infra]
+      - run-migrations:
+          requires: [configure-infra]
+      - deploy-frontend:
+          requires: [run-migrations]
