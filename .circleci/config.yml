@@ -211,7 +211,7 @@ jobs:
       - checkout
       - restore_cache:
           keys: [backend-build]
-          
+
       - run:
           name: Run migrations
           command: |
@@ -255,7 +255,7 @@ jobs:
       - run:
           name: Deploy frontend objects
           command: |
-            cd fronted
+            cd frontend
             npm ci
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
