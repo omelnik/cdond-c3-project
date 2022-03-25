@@ -211,13 +211,18 @@ jobs:
       - checkout
       - restore_cache:
           keys: [backend-build]
-
+          
       - run:
           name: Run migrations
           command: |
             cd backend
             npm ci
             npm run migrations > migrations_dump.txt
+
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update && sudo apt-get install -y ca-certificates
             
       - run:
           name: Send migration status to kvdb.io OR memstash.io
