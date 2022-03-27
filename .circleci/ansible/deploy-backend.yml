@@ -1,5 +1,4 @@
 ---
-
 - name: "configuration play." 
   hosts: web
   user: ubuntu
@@ -8,5 +7,26 @@
     - ansible_python_interpreter: /usr/bin/python3
     - ansible_host_key_checking: false
     - ansible_stdout_callback: yaml
+
+    - os_environment:
+        - key: TYPEORM_CONNECTION     
+          value: "{{ lookup('env', 'TYPEORM_CONNECTION')}}"
+        - key: TYPEORM_DATABASE       
+          value: "{{ lookup('env', 'TYPEORM_DATABASE')}}"
+        - key: TYPEORM_ENTITIES       
+          value: "{{ lookup('env', 'TYPEORM_ENTITIES')}}"
+        - key: TYPEORM_HOST           
+          value: "{{ lookup('env', 'TYPEORM_HOST')}}"
+        - key: TYPEORM_MIGRATIONS_DIR 
+          value: "{{ lookup('env', 'TYPEORM_MIGRATIONS_DIR')}}"
+        - key: TYPEORM_MIGRATIONS     
+          value: "{{ lookup('env', 'TYPEORM_MIGRATIONS')}}"
+        - key: TYPEORM_PASSWORD       
+          value: "{{ lookup('env', 'TYPEORM_PASSWORD')}}"
+        - key: TYPEORM_PORT           
+          value: 5432
+        - key: TYPEORM_USERNAME       
+          value: "{{ lookup('env', 'TYPEORM_USERNAME')}}"
+
   roles:
     - deploy

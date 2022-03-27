@@ -1,6 +1,6 @@
 ---
 - name: "ensure backend dir exists"
-  file:
+  ansible.builtin.file:
     path: /home/ubuntu/backend
     state: directory
 
@@ -10,8 +10,18 @@
     src: artifact.tar.gz
     dest: /home/ubuntu/backend
 
+- name: "add environment variables to the remote shell"
+  become: true
+  ansible.builtin.lineinfile:
+    dest: "/home/ubuntu/backend/.env"
+    regexp: "^{{ item.key }}="
+    state: present
+    line: "{{ item.key }}={{ item.value}}"
+    create: yes
+  with_items: "{{ os_environment }}"
+
 - name: "start the server"
-  shell: |
+  ansible.builtin.shell: |
     cd /home/ubuntu/backend
     npm install
     pm2 stop default
