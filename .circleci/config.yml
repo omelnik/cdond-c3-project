@@ -308,10 +308,7 @@ jobs:
       - run:
           name: Create backend artifact
           command: |
-            pwd
-            cd ..
             mkdir -p .circleci/ansible/roles/deploy/files
-            pwd
             tar -C backend -czvf artifact.tar.gz .
             mv artifact.tar.gz .circleci/ansible/roles/deploy/files
 
