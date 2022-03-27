@@ -347,9 +347,9 @@ jobs:
               --output text \
               --filters "Name = tag:Name, Values = backend-${CIRCLE_WORKFLOW_ID:0:7}")
             
-            API_URL="http://${BACKEND_IP}:3030"
-            echo ${API_URL}
-            if curl "${API_URL}/api/status" | grep "ok"
+            API_URL="http://${BACKEND_IP}:3030/api/status"
+            echo $API_URL
+            if curl ${API_URL} | grep "ok"
             then
                 exit 0
             else
