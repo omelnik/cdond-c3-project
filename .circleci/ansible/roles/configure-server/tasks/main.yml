@@ -4,11 +4,6 @@
   apt:
     update_cache: yes
 
-- name: "upgrade packages"
-  become: true
-  apt:
-    upgrade: true
-
 - name: "install node & npm."
   become: true
   ansible.builtin.shell: |

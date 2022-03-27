@@ -37,6 +37,22 @@ commands:
             fi
             aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
 
+    revert-migrations:
+      description: Revert the last migration
+      steps:
+        - run:
+            name: Revert migrations
+            when: on_fail
+            command: |
+              SUCCESS=$(curl --insecure  https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7})
+              if (( $SUCCESS == 1 ));
+              then
+                  cd ~/project/backend
+                  npm install
+                  npm run migration:revert
+              fi 
+
+
   notify_slack_error:
     description: Slack Notification
     steps:
@@ -259,9 +275,9 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            export BACKEND_IP=$(aws ec2 describe-instances \
+            BACKEND_IP=$(aws ec2 describe-instances \
                     --query 'Reservations[0].Instances[0].PublicIpAddress' \
-                    --filters "Name = tag:Name, Values = ${CIRCLE_WORKFLOW_ID:0:7}")
+                    --filters "Name = tag:Name, Values = backend-${CIRCLE_WORKFLOW_ID:0:7}")
             export API_URL="http://${BACKEND_IP}:3030"
 
             echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
@@ -326,14 +342,13 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            export BACKEND_IP=$(aws ec2 describe-instances \
+            BACKEND_IP=$(aws ec2 describe-instances \
                     --query 'Reservations[0].Instances[0].PublicIpAddress' \
-                    --filters "Name = tag:Name, Values = ${CIRCLE_WORKFLOW_ID:0:7}")
-
+                    --filters "Name = tag:Name, Values = backend-${CIRCLE_WORKFLOW_ID:0:7}")
       - run:
           name: Backend smoke test.
           command: |
-            export API_URL="http://${BACKEND_IP}:3030/api/status"
+            API_URL="http://${BACKEND_IP}:3030"
             if curl "${API_URL}/api/status" | grep "ok"
             then
                 return 0
@@ -352,6 +367,8 @@ jobs:
             else
               return 1
             fi
+      - destroy-environment
+      - revert-migrations
 
 workflows:
   default:
