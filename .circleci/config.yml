@@ -268,6 +268,8 @@ jobs:
     executor: docker-python-executor
     steps:
       - checkout
+      - restore_cache:
+          keys: [backend-build]
 
       - attach_workspace:
           at: ./.circleci/ansible
@@ -279,22 +281,66 @@ jobs:
           name: Install dependencies
           command: |
               sudo apt-get update && sudo apt-get install -y tar gzip
-              pip install ansible
+              curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+              sudo apt-get install -y nodejs
+              pip install ansible awscli
 
-      - run:
-          name: Deploy backend
+      - run: 
+          name: Prepare backend artifact
           command: |
             cd backend
             npm i
             npm run build
+
+      - run:
+          name: Create backend artifact
+          command: |
             cd ..
             mkdir .circleci/ansible/roles/deploy/files
             tar -C backend -czvf artifact.tar.gz .
             mv artifact.tar.gz .circleci/ansible/roles/deploy/files
+
+      - run:
+          name: Deploy backend
+          command: |
             cd .circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
             
       - destroy-environment
+
+  smoke-test:
+    executor: aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Get backend url
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances \
+                    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+                    --filters "Name = tag:Name, Values = ${CIRCLE_WORKFLOW_ID:0:7}")
+
+      - run:
+          name: Backend smoke test.
+          command: |
+            export API_URL="http://${BACKEND_IP}:3030/api/status"
+            if curl "${API_URL}/api/status" | grep "ok"
+            then
+                return 0
+            else
+                return 1
+            fi
+
+      - run:
+          name: Frontend smoke test.
+          command: |
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"
+            if curl -s ${URL} | grep "Welcome"
+            then
+              # Change this to 0 after the job fails
+              return 1
+            else
+              return 1
+            fi
 
 workflows:
   default:
