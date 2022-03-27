@@ -296,7 +296,7 @@ jobs:
           name: Create backend artifact
           command: |
             cd ..
-            mkdir .circleci/ansible/roles/deploy/files
+            mkdir -p .circleci/ansible/roles/deploy/files
             tar -C backend -czvf artifact.tar.gz .
             mv artifact.tar.gz .circleci/ansible/roles/deploy/files
 
