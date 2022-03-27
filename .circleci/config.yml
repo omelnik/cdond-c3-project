@@ -354,7 +354,6 @@ jobs:
               --filters "Name = tag:Name, Values = backend-${CIRCLE_WORKFLOW_ID:0:7}")
             
             API_URL="http://${BACKEND_IP}:3030/api/status"
-            echo $API_URL
             if curl ${API_URL} | grep "ok"
             then
                 exit 0
@@ -369,12 +368,12 @@ jobs:
             if curl -s ${URL} | grep "Welcome"
             then
               # Change this to 0 after the job fails
-              return 1
+              exit 1
             else
-              return 1
+              exit 1
             fi
-      # - destroy-environment
-      # - revert-migrations
+      - destroy-environment
+      - revert-migrations
 
 workflows:
   default:
