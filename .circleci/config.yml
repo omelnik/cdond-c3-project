@@ -19,10 +19,23 @@ commands:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     steps:
       - run:
-          name: Destroy environments
+          name: Destroy backend environment
           when: on_fail
           command: |
             aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
+
+      - run:
+          name: Destroy frontend environment
+          when: on_fail
+          command: |
+            S3_BUCKET="s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}"
+            if aws s3 ls "${S3_BUCKET}" 2>&1 | grep -q 'An error occurred'
+            then
+                echo "bucket does not exist."
+            else
+                echo "deleting files..."
+                aws s3 rm ${S3_BUCKET} --recursive
+            fi
             aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
 
   notify_slack_error:
@@ -295,8 +308,10 @@ jobs:
       - run:
           name: Create backend artifact
           command: |
+            pwd
             cd ..
             mkdir -p .circleci/ansible/roles/deploy/files
+            pwd
             tar -C backend -czvf artifact.tar.gz .
             mv artifact.tar.gz .circleci/ansible/roles/deploy/files
 
