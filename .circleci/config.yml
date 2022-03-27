@@ -264,6 +264,38 @@ jobs:
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - destroy-environment
 
+deploy-backend:
+  executor: docker-python-executor
+  steps:
+    - checkout
+
+    - attach_workspace:
+        at: ./.circleci/ansible
+
+    - add_ssh_keys:
+        fingerprints: ["e8:32:3d:fb:58:36:6d:9d:56:ce:06:ad:4f:99:cc:7a"]
+
+    - run:
+        name: Install dependencies
+        command: |
+            sudo apt-get update && sudo apt-get install -y tar gzip
+            pip install ansible
+
+    - run:
+        name: Deploy backend
+        command: |
+          cd backend
+          npm i
+          npm run build
+          cd ..
+          mkdir .circleci/ansible/roles/deploy/files
+          tar -C backend -czvf artifact.tar.gz .
+          mv artifact.tar.gz .circleci/ansible/roles/deploy/files
+          cd .circleci/ansible
+          ansible-playbook -i inventory.txt deploy-backend.yml
+          
+    - destroy-environment
+
 workflows:
   default:
     jobs:
@@ -286,4 +318,6 @@ workflows:
       - run-migrations:
           requires: [configure-infra]
       - deploy-frontend:
+          requires: [run-migrations]
+      - deploy-backend:
           requires: [run-migrations]
