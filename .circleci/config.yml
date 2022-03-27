@@ -33,7 +33,6 @@ commands:
             then
                 echo "bucket does not exist."
             else
-                echo "deleting files..."
                 aws s3 rm ${S3_BUCKET} --recursive
             fi
             aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
@@ -375,7 +374,9 @@ workflows:
           requires: [deploy-backend-infra, deploy-frontend-infra]
       - run-migrations:
           requires: [configure-infra]
-      - deploy-frontend:
-          requires: [run-migrations]
       - deploy-backend:
           requires: [run-migrations]
+      - deploy-frontend:
+          requires: [run-migrations]
+      - smoke-test:
+          requires: [deploy-backend, deploy-frontend]
