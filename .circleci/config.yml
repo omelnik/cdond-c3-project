@@ -277,9 +277,9 @@ jobs:
           command: |
             BACKEND_IP=$(aws ec2 describe-instances \
                     --query 'Reservations[0].Instances[0].PublicIpAddress' \
+                    --output text \
                     --filters "Name = tag:Name, Values = backend-${CIRCLE_WORKFLOW_ID:0:7}")
-            export API_URL="http://${BACKEND_IP}:3030"
-
+            API_URL="http://${BACKEND_IP}:3030"
             echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
             cat frontend/.env
       - run:
@@ -344,8 +344,9 @@ jobs:
           command: |
             BACKEND_IP=$(aws ec2 describe-instances \
               --query 'Reservations[0].Instances[0].PublicIpAddress' \
+              --output text \
               --filters "Name = tag:Name, Values = backend-${CIRCLE_WORKFLOW_ID:0:7}")
-
+            
             API_URL="http://${BACKEND_IP}:3030"
             if curl "${API_URL}/api/status" | grep "ok"
             then
@@ -365,8 +366,8 @@ jobs:
             else
               return 1
             fi
-      # - destroy-environment
-      # - revert-migrations
+      - destroy-environment
+      - revert-migrations
 
 workflows:
   default:
