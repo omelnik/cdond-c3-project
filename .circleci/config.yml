@@ -219,7 +219,7 @@ jobs:
           at: ./.circleci/ansible
 
       - add_ssh_keys:
-          fingerprints: ["8b:73:d4:8d:12:29:72:36:4e:31:b8:b2:d8:ab:ee:be"]
+          fingerprints: ["04:82:cf:d1:a8:3d:25:9f:c9:39:e3:9c:f8:6b:42:f5"]
 
       - run:
           name: Install dependencies
@@ -305,7 +305,7 @@ jobs:
           at: ./.circleci/ansible
 
       - add_ssh_keys:
-          fingerprints: ["8b:73:d4:8d:12:29:72:36:4e:31:b8:b2:d8:ab:ee:be"]
+          fingerprints: ["04:82:cf:d1:a8:3d:25:9f:c9:39:e3:9c:f8:6b:42:f5"]
 
       - run:
           name: Install dependencies
@@ -393,7 +393,7 @@ jobs:
             aws cloudformation deploy \
               --template-file .circleci/files/cloudfront.yml \
               --stack-name InitialStack \
-              --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides WorkflowID="udapeople-${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
 
             echo OldWorkflowID: "${OldWorkflowID}"
