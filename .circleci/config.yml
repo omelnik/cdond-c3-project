@@ -389,15 +389,12 @@ jobs:
             cat ~/OldWorkflowID.txt
             
             curl https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7} -d $OldWorkflowID
-
+            
             aws cloudformation deploy \
               --template-file .circleci/files/cloudfront.yml \
               --stack-name InitialStack \
               --parameter-overrides WorkflowID="udapeople-${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
-
-            echo OldWorkflowID: "${OldWorkflowID}"
-            echo Current Workflow ID: ${CIRCLE_WORKFLOW_ID:0:7}
       - destroy-environment
       - revert-migrations
 
@@ -459,14 +456,8 @@ workflows:
           requires: [build-backend]
       - deploy-frontend-infra:
           requires: [test-frontend, scan-frontend]
-          filters:
-            branches:
-              only: master
       - deploy-backend-infra:
           requires: [test-backend,  scan-backend]
-          filters:
-            branches:
-              only: master
       - configure-infra:
           requires: [deploy-backend-infra, deploy-frontend-infra]
       - run-migrations:
