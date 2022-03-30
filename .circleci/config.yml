@@ -401,6 +401,49 @@ jobs:
       - destroy-environment
       - revert-migrations
 
+  cleanup:
+    executor: docker-python-executor
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update && sudo apt-get install -y ca-certificates
+            pip install awscli
+      - run:
+          name: Get old stack workflow id
+          command: |
+            # Fetch the Old workflow ID
+            OldWorkflowID=$(curl --insecure https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            echo OldWorkflowID: $OldWorkflowID
+            echo Current Workflow ID: ${CIRCLE_WORKFLOW_ID:0:7}
+            # Fetch the stack names
+            aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+              --stack-status-filter CREATE_COMPLETE --no-paginate --output text >> ~/stacks.txt
+            echo Stack names: $(cat ~/stacks.txt)
+      - run:
+          name: Remove old stacks and files
+          command: |
+            OldWorkflowID=$(curl --insecure https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            Stacks=$(cat ~/stacks.txt)
+            echo OldWorkflowID: $OldWorkflowID
+            echo Stack names: ${Stacks[@]}
+            if [[ "${Stacks[@]}" =~ "${OldWorkflowID}" ]]
+            then
+              echo "Destroying environment: ${OldWorkflowID}"
+              if echo $Stacks | grep -q "udapeople-backend-${OldWorkflowID}"
+              then
+                aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
+              fi
+              if echo $Stacks | grep -q "udapeople-frontend-${OldWorkflowID}"
+              then
+                aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+                aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
+              fi
+            else
+              echo "--------------- Error in the Cleanup ---------------"
+            fi
+
 workflows:
   default:
     jobs:
@@ -430,3 +473,5 @@ workflows:
           requires: [deploy-backend, deploy-frontend]
       - cloudfront-update:
           requires: [smoke-test]
+      - cleanup:
+          requires: [cloudfront-update]
