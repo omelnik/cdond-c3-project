@@ -175,7 +175,7 @@ jobs:
       - run:
           name: Install yum dependencies
           command: |
-            yum -y install tar gzip
+            yum -y install tar gzip jq
 
       - run:
           name: Ensure back-end infrastructure exists
@@ -189,9 +189,8 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             echo "[web]" > inventory.txt
-            aws ec2 describe-instances \
-             --query 'Reservations[*].Instances[*].PublicIpAddress' \
-             --output text >> inventory.txt
+            PublicIpAddress=$(aws ec2 describe-instances --query "Reservations[?Instances[?Tags[?Value=='backend-${CIRCLE_WORKFLOW_ID:0:7}']]]" | jq ".[].Instances[].PublicIpAddress")
+            echo $PublicIpAddress >> inventory.txt
 
       - persist_to_workspace:
           root: .
@@ -402,12 +401,12 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update && sudo apt-get install -y ca-certificates
+            sudo apt-get update && sudo apt-get install -y ca-certificates jq
             pip install awscli
       - run:
           name: Remove old stacks and files
           command: |
-            OldWorkflowID=$(aws cloudformation describe-stacks --query "Stacks[0].Parameters[?ParameterValue!='${CIRCLE_WORKFLOW_ID:0:7}'].ParameterValue" --output text)
+            OldWorkflowID=$(aws cloudformation describe-stacks | jq '.Stacks[] | select(.StackName!="InitialStack" and .Parameters[].ParameterValue!="${CIRCLE_WORKFLOW_ID:0:7}").Parameters[].ParameterValue' | jq --slurp '.[0]')
             S3_BUCKET="s3://udapeople-${OldWorkflowID}"
             if aws s3 ls "${S3_BUCKET}" 2>&1 | grep -q 'An error occurred'
             then
