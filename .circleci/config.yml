@@ -408,7 +408,7 @@ jobs:
           command: |
             OldWorkflowID=$(aws cloudformation describe-stacks | jq '.Stacks[] | select(.StackName!="InitialStack" and .Parameters[].ParameterValue!="${CIRCLE_WORKFLOW_ID:0:7}").Parameters[].ParameterValue' | jq --slurp '.[0]')
             S3_BUCKET="s3://udapeople-${OldWorkflowID}"
-            if aws s3 ls "${S3_BUCKET}" 2>&1 | grep -q 'An error occurred'
+            if aws s3 ls $S3_BUCKET 2>&1 | grep -q 'An error occurred'
             then
                 echo "bucket does not exist."
             else
