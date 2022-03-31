@@ -412,7 +412,7 @@ jobs:
             then
                 echo "bucket does not exist."
             else
-                aws s3 rm ${S3_BUCKET} --recursive
+                aws s3 rm $S3_BUCKET --recursive
             fi
             aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
             aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
