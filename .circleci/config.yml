@@ -17,12 +17,16 @@ executors:
 commands: 
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    parameters:
+      workflowId:
+        type: string
+        default: ${CIRCLE_WORKFLOW_ID:0:7}
     steps:
       - run:
           name: Destroy backend environment
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.workflowId >>
 
       - run:
           name: Destroy frontend environment
@@ -35,7 +39,7 @@ commands:
             else
                 aws s3 rm ${S3_BUCKET} --recursive
             fi
-            aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.workflowId >>
 
   revert-migrations:
     description: Revert the last migration
@@ -408,38 +412,18 @@ jobs:
             sudo apt-get update && sudo apt-get install -y ca-certificates
             pip install awscli
       - run:
-          name: Get old stack workflow id
-          command: |
-            # Fetch the Old workflow ID
-            OldWorkflowID=$(curl --insecure https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7})
-            echo OldWorkflowID: $OldWorkflowID
-            echo Current Workflow ID: ${CIRCLE_WORKFLOW_ID:0:7}
-            # Fetch the stack names
-            aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
-              --stack-status-filter CREATE_COMPLETE --no-paginate --output text >> ~/stacks.txt
-            echo Stack names: $(cat ~/stacks.txt)
-      - run:
           name: Remove old stacks and files
           command: |
-            OldWorkflowID=$(curl --insecure https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7})
-            Stacks=$(cat ~/stacks.txt)
-            echo OldWorkflowID: $OldWorkflowID
-            echo Stack names: ${Stacks[@]}
-            if [[ "${Stacks[@]}" =~ "${OldWorkflowID}" ]]
+            OldWorkflowID=$(aws cloudformation describe-stacks --query "Stacks[0].Parameters[?ParameterValue!=${CIRCLE_WORKFLOW_ID:0:7}].ParameterValue" --output text)
+            S3_BUCKET="s3://udapeople-${OldWorkflowID}"
+            if aws s3 ls "${S3_BUCKET}" 2>&1 | grep -q 'An error occurred'
             then
-              echo "Destroying environment: ${OldWorkflowID}"
-              if echo $Stacks | grep -q "udapeople-backend-${OldWorkflowID}"
-              then
-                aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
-              fi
-              if echo $Stacks | grep -q "udapeople-frontend-${OldWorkflowID}"
-              then
-                aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
-                aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
-              fi
+                echo "bucket does not exist."
             else
-              echo "--------------- Error in the Cleanup ---------------"
+                aws s3 rm ${S3_BUCKET} --recursive
             fi
+            aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
+            aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
 
 workflows:
   default:
