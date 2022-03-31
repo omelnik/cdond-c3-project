@@ -386,14 +386,7 @@ jobs:
       - checkout
       - run:
           name: Update cloudfront distribution
-          command: |
-            export OldWorkflowID=$(aws cloudformation list-exports --query "Exports[?Name==\`WorkflowID\`].Value" --no-paginate --output text)
-  
-            echo $OldWorkflowID >> ~/OldWorkflowID.txt
-            cat ~/OldWorkflowID.txt
-            
-            curl https://kvdb.io/${MIRGRATION_STATUS_BUCKET}/migration_${CIRCLE_WORKFLOW_ID:0:7} -d $OldWorkflowID
-            
+          command: |            
             aws cloudformation deploy \
               --template-file .circleci/files/cloudfront.yml \
               --stack-name InitialStack \
@@ -414,7 +407,7 @@ jobs:
       - run:
           name: Remove old stacks and files
           command: |
-            OldWorkflowID=$(aws cloudformation describe-stacks --query "Stacks[0].Parameters[?ParameterValue!=${CIRCLE_WORKFLOW_ID:0:7}].ParameterValue" --output text)
+            OldWorkflowID=$(aws cloudformation describe-stacks --query "Stacks[0].Parameters[?ParameterValue!='${CIRCLE_WORKFLOW_ID:0:7}'].ParameterValue" --output text)
             S3_BUCKET="s3://udapeople-${OldWorkflowID}"
             if aws s3 ls "${S3_BUCKET}" 2>&1 | grep -q 'An error occurred'
             then
