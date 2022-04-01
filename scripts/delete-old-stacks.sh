@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OLD_STACKS=$(aws cloudformation describe-stacks | jq '.Stacks[] | select(.StackName!="InitialStack" and .Parameters[].ParameterValue!="${CIRCLE_WORKFLOW_ID:0:7}").Parameters[].ParameterValue' | uniq)
+OLD_STACKS=$(aws cloudformation describe-stacks | jq -r '.Stacks[] | select(.StackName!="InitialStack" and .Parameters[].ParameterValue!="${CIRCLE_WORKFLOW_ID:0:7}").Parameters[].ParameterValue' | uniq)
 
 for stack in $OLD_STACKS
 do  
@@ -12,6 +12,7 @@ do
     else
         aws s3 rm $S3_BUCKET --recursive
     fi
+
     aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
     aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
 done
