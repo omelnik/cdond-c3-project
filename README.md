@@ -4,18 +4,18 @@
 ### Project Submission
 | Description | Screenshot |
 | --- | ----------- |
-| Job failed because of compile errors | [SCREENSHOT01] |
-| Job failed because of unit tests | [SCREENSHOT02] |
-| Job that failed because of vulnerable packages | [SCREENSHOT03] |
-| An alert from one of your failed builds | [SCREENSHOT04] |
-| Appropriate job failure for infrastructure creation | [SCREENSHOT05] |
-| Appropriate job failure for the smoke test job | ![Screenshot](screenshots/screenshot_06.png) |
-| Successful rollback after a failed smoke test | [SCREENSHOT07] |
-| Successful promotion job | [SCREENSHOT08] |
-| Successful cleanup job | [SCREENSHOT09] |
-| Only deploy on pushed to `master` branch | ![Screenshot](screenshots/screenshot_10.png) |
-| Provide a screenshot of a graph of your EC2 instance including available memory, available disk space, and CPU usage | ![Screenshot](screenshots/screenshot_11.png) |
-| Provide a screenshot of an alert that was sent by Prometheus | ![Screenshot](screenshots/screenshot_12.png) |
+| Job failed because of compile errors | ![Screenshot](screenshots/SCREENSHOT01.png) |
+| Job failed because of unit tests | ![Screenshot](screenshots/SCREENSHOT02-01.png) ![Screenshot](screenshots/SCREENSHOT02-02.png) |
+| Job that failed because of vulnerable packages | ![Screenshot](screenshots/SCREENSHOT03.png) |
+| An alert from one of your failed builds | ![Screenshot](screenshots/SCREENSHOT04.png) |
+| Appropriate job failure for infrastructure creation | ![Screenshot](screenshots/SCREENSHOT05.png) |
+| Appropriate job failure for the smoke test job | ![Screenshot](screenshots/SCREENSHOT06.png) |
+| Successful rollback after a failed smoke test | ![Screenshot](screenshots/SCREENSHOT07.png) |
+| Successful promotion job | ![Screenshot](screenshots/SCREENSHOT08.png) |
+| Successful cleanup job | ![Screenshot](screenshots/SCREENSHOT09.png) |
+| Only deploy on pushed to `master` branch | ![Screenshot](screenshots/SCREENSHOT10.png) |
+| Provide a screenshot of a graph of your EC2 instance including available memory, available disk space, and CPU usage | ![Screenshot](screenshots/SCREENSHOT11.png) |
+| Provide a screenshot of an alert that was sent by Prometheus | ![Screenshot](screenshots/SCREENSHOT12.png) |
 
 ### Built With
 - [Circle CI](www.circleci.com) - Cloud-based CI/CD service
