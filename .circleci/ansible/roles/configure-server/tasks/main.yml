@@ -4,15 +4,10 @@
   apt:
     update_cache: yes
 
-- name: "upgrade packages"
-  become: true
-  apt:
-    upgrade: true
-
 - name: "install node & npm."
   become: true
   ansible.builtin.shell: |
-    curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+    curl -fsSL https://deb.nodesource.com/setup_12.x | bash -
     apt-get install -y nodejs
 
 - name: "install pm2"
