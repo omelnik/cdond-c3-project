@@ -1,0 +1,5 @@
+1. Public URL to GitHub repository: https://github.com/omelnik/cdond-c3-project
+2. Public URL to S3 Bucket: http://udapeople-304ed61.s3-website-us-east-1.amazonaws.com/#/employees
+3. Public URL to CloudFront distribution: https://d182liau695iei.cloudfront.net
+4. Public URL to deployed application back-end in EC2: http://ec2-3-90-111-212.compute-1.amazonaws.com/
+5. Public URL to Prometheus Server: http://ec2-54-198-217-4.compute-1.amazonaws.com:9090/targets
