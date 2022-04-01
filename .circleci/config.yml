@@ -385,12 +385,14 @@ jobs:
       - checkout
       - run:
           name: Update cloudfront distribution
-          command: |            
+          command: |
+            echo "Updating cloudfront distribution: ${CIRCLE_WORKFLOW_ID:0:7}"            
             aws cloudformation deploy \
               --template-file .circleci/files/cloudfront.yml \
               --stack-name InitialStack \
               --parameter-overrides WorkflowID="udapeople-${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
+
       - destroy-environment
       - revert-migrations
 
@@ -403,17 +405,13 @@ jobs:
           command: |
             sudo apt-get update && sudo apt-get install -y ca-certificates jq
             pip install awscli
+            
       - run:
           name: Remove old stacks and files
           command: |
             OldWorkflowID=$(aws cloudformation describe-stacks | jq '.Stacks[] | select(.StackName!="InitialStack" and .Parameters[].ParameterValue!="${CIRCLE_WORKFLOW_ID:0:7}").Parameters[].ParameterValue' | jq -r --slurp '.[0]')
             S3_BUCKET="s3://udapeople-$OldWorkflowID"
-            if aws s3 ls $S3_BUCKET 2>&1 | grep -q 'An error occurred'
-            then
-                echo "bucket does not exist."
-            else
-                aws s3 rm $S3_BUCKET --recursive
-            fi
+            aws s3 rm $S3_BUCKET --recursive
             aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
             aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
 
@@ -432,8 +430,14 @@ workflows:
           requires: [build-backend]
       - deploy-frontend-infra:
           requires: [test-frontend, scan-frontend]
+          filters:
+            branches:
+              only: master
       - deploy-backend-infra:
           requires: [test-backend,  scan-backend]
+          filters:
+            branches:
+              only: master
       - configure-infra:
           requires: [deploy-backend-infra, deploy-frontend-infra]
       - run-migrations:
