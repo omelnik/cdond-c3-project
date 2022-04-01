@@ -403,19 +403,12 @@ jobs:
           command: |
             sudo apt-get update && sudo apt-get install -y ca-certificates jq
             pip install awscli
+
       - run:
           name: Remove old stacks and files
           command: |
-            OldWorkflowID=$(aws cloudformation describe-stacks | jq '.Stacks[] | select(.StackName!="InitialStack" and .Parameters[].ParameterValue!="${CIRCLE_WORKFLOW_ID:0:7}").Parameters[].ParameterValue' | jq -r --slurp '.[0]')
-            S3_BUCKET="s3://udapeople-$OldWorkflowID"
-            if aws s3 ls $S3_BUCKET 2>&1 | grep -q 'An error occurred'
-            then
-                echo "bucket does not exist."
-            else
-                aws s3 rm $S3_BUCKET --recursive
-            fi
-            aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
-            aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
+            chmod +x scripts/delete-old-stacks.sh
+            ./scripts/delete-old-stacks.sh
 
 workflows:
   default:
