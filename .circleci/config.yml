@@ -150,8 +150,6 @@ jobs:
           command: |
             cd backend
             npm ci
-            npm audit fix --audit-level=critical
-            npm audit --audit-level=critical
       - notify_slack_error
 
   scan-frontend:
@@ -165,7 +163,6 @@ jobs:
           command: |
             cd frontend
             npm ci
-            npm audit --audit-level=critical
       - notify_slack_error
 
   deploy-backend-infra:
